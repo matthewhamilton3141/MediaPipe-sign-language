@@ -1,0 +1,7 @@
+export const CONFIG = {
+  COOLDOWN: 400,
+  PINCH_THRESHOLD: 0.05,
+  ACCENT_COLOR: '#00ff88',
+  CURSOR_COLOR: '#4488ff',
+  DELETE_COLOR: '#ff4444'
+};

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignText AI | Glass Edition</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="camera-section">
+            <div id="type-mode-display" class="mode-indicator">INITIALIZING...</div>
+            <video class="input_video" style="display:none"></video>
+            <canvas class="output_canvas"></canvas>
+            <button id="settings-toggle" class="settings-btn">⚙️</button>
+            <div id="settings-menu" class="settings-menu hidden">
+                <button id="clear-text">Clear All</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="sidebar-header">DOCUMENT_STREAM.v1</div>
+            <div id="text-display" class="text-content"></div>
+        </div>
+    </div>
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>
