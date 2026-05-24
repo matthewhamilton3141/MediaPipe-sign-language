@@ -8,9 +8,6 @@
     "build": "vite build",
     "preview": "vite preview"
   },
-  "devDependencies": {
-    "vite": "^8.0.3"
-  },
   "description": "",
   "main": "index.js",
   "dependencies": {
@@ -33,5 +30,8 @@
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.0.2",
     "lightningcss-darwin-arm64": "1.32.0"
+  },
+  "devDependencies": {
+    "vite": "^6.4.2"
   }
 }
