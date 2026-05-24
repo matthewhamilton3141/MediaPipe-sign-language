@@ -31,7 +31,7 @@
   "author": "",
   "license": "ISC",
   "optionalDependencies": {
-    "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.12",
+    "@rolldown/binding-linux-x64-gnu": "1.0.2",
     "lightningcss-darwin-arm64": "1.32.0"
   }
 }
