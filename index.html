@@ -1,31 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SignText AI | Glass Edition</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic/holistic.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HandType — ASL Gesture Keyboard</title>
+  <meta name="description" content="Fingerspell with your hand and type. ASL letter recognition powered by MediaPipe and on-device machine learning.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <div class="camera-section">
-            <div id="type-mode-display" class="mode-indicator">INITIALIZING...</div>
-            <video class="input_video" style="display:none"></video>
-            <canvas class="output_canvas"></canvas>
-            <button id="settings-toggle" class="settings-btn">⚙️</button>
-            <div id="settings-menu" class="settings-menu hidden">
-                <button id="clear-text">Clear All</button>
-            </div>
-        </div>
 
-        <div class="sidebar">
-            <div class="sidebar-header">DOCUMENT_STREAM.v1</div>
-            <div id="text-display" class="text-content"></div>
-        </div>
+  <!-- Tutorial overlay -->
+  <div id="tutorial" class="overlay" role="dialog" aria-modal="true" aria-labelledby="tut-title">
+    <div class="tutorial-card">
+      <div class="tutorial-header">
+        <div class="badge">HANDTYPE · ASL</div>
+        <h1 id="tut-title">Fingerspell to Type</h1>
+        <p>Make an ASL letter sign with your right hand — on-device ML recognizes it and types it. Works right away with a built-in starter model.</p>
+      </div>
+
+      <div class="tutorial-grid">
+        <div class="tut-item"><div class="tut-icon mode-point">✋</div><div><strong>Right Hand Sign</strong><span>Make the ASL letter — it's recognized live</span></div></div>
+        <div class="tut-item"><div class="tut-icon action">⏱</div><div><strong>Hold the Sign</strong><span>Dwell to type it (or pinch in Pinch mode)</span></div></div>
+        <div class="tut-item"><div class="tut-icon action">M</div><div><strong>Left Middle Pinch</strong><span>Space</span></div></div>
+        <div class="tut-item"><div class="tut-icon action">R</div><div><strong>Left Ring Pinch</strong><span>Backspace (or hover the ⌫ button)</span></div></div>
+        <div class="tut-item"><div class="tut-icon action">P</div><div><strong>Left Pinky Pinch</strong><span>Move cursor left / right</span></div></div>
+        <div class="tut-item"><div class="tut-icon action">⌨</div><div><strong>Tab / 1–5</strong><span>Accept a word suggestion</span></div></div>
+      </div>
+
+      <div class="callout">
+        <strong>Start typing now</strong> with the built-in starter model — no setup needed.
+        For best accuracy, <strong>calibrate</strong>: you'll hold each ASL letter briefly so the
+        model learns your hand. Similar signs (U/V/K) especially benefit. Skip or Finish early anytime.
+      </div>
+
+      <div class="tut-actions">
+        <button id="start-btn" class="start-btn">Start Typing</button>
+        <button id="calibrate-btn" class="ghost-btn">Calibrate for my hand</button>
+      </div>
     </div>
-    <script type="module" src="src/main.js"></script>
+  </div>
+
+  <!-- Calibration overlay -->
+  <div id="calibration" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="calib-pose">
+    <div class="calib-card">
+      <div class="badge">CALIBRATION</div>
+      <div class="calib-count" id="calib-count">1 / 26</div>
+      <h2 id="calib-pose" class="calib-pose">A</h2>
+      <p id="calib-instruction" class="calib-instruction">Show your right hand to the camera</p>
+      <div class="calib-track"><div id="calib-fill" class="calib-fill"></div></div>
+      <p id="calib-status" class="calib-status" aria-live="polite">Get ready…</p>
+      <div class="calib-actions">
+        <button id="calib-skip" class="ghost-btn small">Skip letter</button>
+        <button id="calib-finish" class="ghost-btn small">Finish early</button>
+        <button id="calib-cancel" class="ghost-btn small">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camera permission error -->
+  <div id="permission-error" class="overlay hidden" role="alertdialog" aria-labelledby="err-title">
+    <div class="error-card">
+      <div class="error-icon">[CAM]</div>
+      <h2 id="err-title">Camera Required</h2>
+      <p>HandType needs camera access to track hand gestures. Please allow access and reload.</p>
+      <button onclick="location.reload()">Reload Page</button>
+    </div>
+  </div>
+
+  <!-- App -->
+  <div class="app-container">
+    <div class="camera-section">
+      <div id="loading-indicator" class="loading">
+        <div class="spinner"></div><span>Loading hand tracking model&hellip;</span>
+      </div>
+
+      <div id="mode-display" class="mode-display" role="status" aria-live="polite">
+        <span id="mode-name">—</span>
+        <span id="mode-letters" class="mode-letters">calibrate to start</span>
+      </div>
+
+      <video class="input_video" style="display:none" playsinline></video>
+      <canvas class="output_canvas" aria-hidden="true"></canvas>
+
+      <div class="cam-controls">
+        <button id="help-btn" class="ctrl-btn" aria-label="Show help" title="Help (H)">?</button>
+        <button id="settings-btn" class="ctrl-btn" aria-label="Settings" title="Settings">&#9881;</button>
+        <button id="swap-btn" class="ctrl-btn" aria-label="Swap hands" title="Swap hands if detection is backwards">&#8644;</button>
+      </div>
+
+      <div id="settings-panel" class="settings-panel hidden">
+        <div class="settings-row">
+          <span class="settings-label">Commit mode</span>
+          <div class="seg">
+            <button data-mode="dwell" class="seg-btn">Dwell</button>
+            <button data-mode="pinch" class="seg-btn">Pinch</button>
+          </div>
+        </div>
+        <button id="recalibrate-btn" class="ghost-btn small">Recalibrate letters</button>
+        <div class="settings-meta">Model: <span id="calib-badge">not calibrated</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span class="brand">HandType</span>
+        <div class="stats">
+          <span id="char-count">0 ch</span>
+          <span id="wpm-display" class="wpm">— WPM</span>
+        </div>
+      </div>
+
+      <div id="suggestions-bar" class="suggestions-bar hidden" aria-label="Word suggestions">
+        <div id="suggestions-list" class="suggestions-list"></div>
+      </div>
+
+      <div id="text-display" class="text-content" role="textbox" aria-label="Typed text" aria-live="polite" tabindex="0"></div>
+
+      <div class="sidebar-footer">
+        <button id="copy-btn" class="foot-btn">Copy</button>
+        <button id="export-btn" class="foot-btn">Export</button>
+        <button id="clear-btn" class="foot-btn danger">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

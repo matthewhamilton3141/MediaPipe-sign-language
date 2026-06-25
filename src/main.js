@@ -1,20 +1,36 @@
 import { onResults } from './ui.js';
 
-const videoElement = document.querySelector('.input_video');
-const holistic = new window.Holistic({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic/${file}`
+const video = document.querySelector('.input_video');
+const loadingEl = document.getElementById('loading-indicator');
+const permissionEl = document.getElementById('permission-error');
+
+const hands = new window.Hands({
+  locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`,
 });
 
-holistic.setOptions({
+hands.setOptions({
+  maxNumHands: 2,
   modelComplexity: 1,
-  minDetectionConfidence: 0.75,
-  minTrackingConfidence: 0.75
+  minDetectionConfidence: 0.7,
+  minTrackingConfidence: 0.65,
 });
 
-holistic.onResults(onResults);
-
-const camera = new window.Camera(videoElement, {
-  onFrame: async () => { await holistic.send({image: videoElement}); },
-  width: 1280, height: 720
+let modelReady = false;
+hands.onResults(results => {
+  if (!modelReady) {
+    modelReady = true;
+    if (loadingEl) loadingEl.style.display = 'none';
+  }
+  onResults(results);
 });
-camera.start();
+
+const camera = new window.Camera(video, {
+  onFrame: async () => { await hands.send({ image: video }); },
+  width: 1280,
+  height: 720,
+});
+
+camera.start().catch(() => {
+  if (permissionEl) permissionEl.classList.remove('hidden');
+  if (loadingEl) loadingEl.style.display = 'none';
+});
